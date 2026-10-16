@@ -1,0 +1,4 @@
+series_id,name,kind,category,cycle_type,true_period_days,status,payee_keys,note
+F_TUITION,university tuition,obligation,service,calendar,182.6,active,M|MERCHANT_040,labelled by the account owner
+F_LPP,property management,obligation,service,calendar,30.4,active,M|MERCHANT_073,labelled by the account owner
+F_URBANWAY,service ฿100,obligation,service,calendar,30.4,active,M|MERCHANT_001,labelled by the account owner

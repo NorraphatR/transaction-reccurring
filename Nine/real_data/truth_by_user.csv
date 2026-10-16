@@ -1,0 +1,4 @@
+series_id,name,kind,category,cycle_type,true_period_days,status,payee_keys,note
+R_RENT,rent,obligation,housing,calendar,30.4,active,P|ACC_025;P|ACC_055;P|ACC_069,labelled by the account owner
+R_PEERAPAS,monthly share (person),obligation,subscription,calendar,30.4,active,P|ACC_015,labelled by the account owner
+R_WANTANEE,support (family),recurring_transfer,family,irregular,30.4,active,P|ACC_052,labelled by the account owner

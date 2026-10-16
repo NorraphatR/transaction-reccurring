@@ -1,0 +1,138 @@
+<title>SafeBelt Question Inbox</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bai+Jamjuree:wght@500;600;700&family=IBM+Plex+Sans+Thai:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: before/after summary, then a phone showing one customer's question inbox beside their bills (before -> after) */
+:root {
+  --page: #f5f6f3; --surface: #fdfdfb; --ink: #121614; --ink-2: #4b524e; --muted: #868b86; --grid: #e3e5df; --ring: rgba(18,22,20,.10);
+  --accent: #6250d6; --accent-soft: rgba(98,80,214,.12); --good: #0ca30c; --good-text: #0b6b1d; --warn: #c98500; --bad: #d03b3b;
+  --phone: #121614; --phone-card: #1f2422; --phone-ink: #f2f3ef; --phone-muted: #9aa19c;
+  --display: "Bai Jamjuree", "IBM Plex Sans Thai", system-ui, sans-serif;
+  --body: "IBM Plex Sans Thai", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) { color-scheme: dark; --page: #0f1110; --surface: #191b1a; --ink: #eef0ec; --ink-2: #c2c6be; --muted: #8b908a; --grid: #2b2e2c;
+    --ring: rgba(255,255,255,.10); --accent: #9085e9; --accent-soft: rgba(144,133,233,.18); --good-text: #3ec04a; --warn: #e0a020; --phone: #262a28; --phone-card: #313633; }
+}
+:root[data-theme="dark"] { color-scheme: dark; --page: #0f1110; --surface: #191b1a; --ink: #eef0ec; --ink-2: #c2c6be; --muted: #8b908a; --grid: #2b2e2c;
+  --ring: rgba(255,255,255,.10); --accent: #9085e9; --accent-soft: rgba(144,133,233,.18); --good-text: #3ec04a; --warn: #e0a020; --phone: #262a28; --phone-card: #313633; }
+* { box-sizing: border-box; }
+body { background: var(--page); color: var(--ink); font: 15.5px/1.55 var(--body); padding: 0 20px; }
+main { max-width: 1120px; margin: 0 auto; padding-block: 40px 80px; display: grid; gap: 40px; }
+h1, h2, h3 { font-family: var(--display); margin: 0; text-wrap: balance; }
+h1 { font-size: clamp(28px, 4.6vw, 40px); line-height: 1.1; }
+h2 { font-size: 22px; }
+p { margin: 0; max-width: 74ch; color: var(--ink-2); }
+.eyebrow { font: 500 12px/1 var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+section, header { display: grid; gap: 14px; }
+.card { background: var(--surface); border: 1px solid var(--ring); border-radius: 8px; padding: 18px; display: grid; gap: 12px; align-content: start; }
+.hero { display: flex; flex-wrap: wrap; gap: 28px; align-items: baseline; }
+.hero b { font: 700 40px/1 var(--display); }
+.hero span { font-size: 13px; color: var(--muted); }
+.arrow { font: 600 26px var(--display); color: var(--muted); }
+.tbl { overflow-x: auto; }
+table { border-collapse: collapse; font-size: 13px; font-variant-numeric: tabular-nums; width: 100%; }
+th, td { padding: 6px 10px; border-bottom: 1px solid var(--grid); text-align: right; white-space: nowrap; }
+th:first-child, td:first-child { text-align: left; }
+th { font-weight: 600; }
+td.up { color: var(--good-text); font-weight: 600; }
+td.down { color: var(--bad); font-weight: 600; }
+.mstats { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; }
+.mstat { background: var(--surface); border: 1px solid var(--ring); border-radius: 8px; padding: 14px; display: grid; gap: 4px; }
+.mstat b { font: 700 22px var(--display); }
+.mstat span { font-size: 12.5px; color: var(--muted); }
+.controls { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+select { font: 500 13px var(--mono); padding: 7px 10px; border-radius: 4px; border: 1px solid var(--ring); background: var(--surface); color: var(--ink); max-width: 100%; }
+select:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.split { display: grid; grid-template-columns: minmax(290px, 360px) 1fr; gap: 24px; align-items: start; }
+@media (max-width: 820px) { .split { grid-template-columns: 1fr; } }
+.phone { background: var(--phone); color: var(--phone-ink); border-radius: 30px; padding: 18px 14px 22px; display: grid; gap: 12px; max-height: 760px; overflow-y: auto; }
+.phone .bar { display: flex; justify-content: space-between; font: 500 11px var(--mono); color: var(--phone-muted); padding: 0 6px; }
+.phone h3 { font-size: 16px; padding: 0 6px; }
+.q { background: var(--phone-card); border-radius: 16px; padding: 12px 12px 10px; display: grid; gap: 8px; }
+.q .meta { display: flex; justify-content: space-between; font: 500 11px var(--mono); color: var(--phone-muted); }
+.q .txt { font-size: 13.5px; line-height: 1.45; }
+.q .opts { display: flex; flex-wrap: wrap; gap: 6px; }
+.q .opt { font: 500 12px var(--body); padding: 6px 10px; border-radius: 999px; border: 1px solid rgba(255,255,255,.18); color: var(--phone-muted); }
+.q .opt.on { background: #9085e9; border-color: #9085e9; color: #101413; font-weight: 600; }
+.q .ans { font: 500 11.5px var(--mono); color: #b9b3f2; }
+.q .eff { font-size: 12px; color: var(--phone-muted); }
+.q.skip { opacity: .55; }
+.empty { font-size: 13px; color: var(--phone-muted); padding: 6px; }
+.bills { display: grid; gap: 10px; }
+.bill { background: var(--surface); border: 1px solid var(--ring); border-radius: 8px; padding: 12px 14px; display: grid; gap: 6px; }
+.bill.chg { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent) inset; }
+.bill .top { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 6px 12px; }
+.bill .name { font-weight: 600; }
+.bill .truth { font-size: 12.5px; color: var(--muted); }
+.vv { font: 600 12.5px var(--mono); display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.pacm { display: flex; flex-wrap: wrap; gap: 4px 16px; font: 500 12.5px var(--mono); color: var(--ink-2); }
+.asked { font-size: 12.5px; color: var(--accent); }
+.note { font-size: 13px; color: var(--muted); }
+</style>
+<main>
+  <header>
+    <div class="eyebrow" id="eyebrow"></div>
+    <h1>What happens when the app asks</h1>
+    <p>The model predicts every bill first. Then a separate step decides which questions the app shows the customer, answers them from the truth table (a customer who always answers correctly), and updates the bills. Every bill keeps its verdict before and after.</p>
+  </header>
+  <section>
+    <div class="card">
+      <div class="hero"><div><b id="ok-b"></b><br><span>fully correct, model only</span></div><div class="arrow">→</div><div><b id="ok-a" style="color:var(--good-text)"></b><br><span>fully correct, with questions</span></div><div><span id="qpc"></span></div></div>
+      <div class="tbl" id="vt"></div>
+    </div>
+    <div class="mstats" id="mstats"></div>
+  </section>
+  <section>
+    <h2>One customer's inbox</h2>
+    <div class="controls"><label for="cust" class="note">Customer</label><select id="cust"></select></div>
+    <div class="split">
+      <div class="phone" id="phone"></div>
+      <div class="bills" id="bills"></div>
+    </div>
+    <p class="note">Highlighted bills changed because of an answer. Buttons show what the simulated customer picked, taken from the truth table. Moment 1 questions are asked the day after a new payment, so older ones appear with their own dates.</p>
+  </section>
+</main>
+<script>
+const D = /*DATA*/null;
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const pct = (v) => (v * 100).toFixed(1) + "%";
+const baht = (v) => "฿" + Math.round(v).toLocaleString("en-US");
+const MOM = { 1: "New payment", 3: "Amount check", 4: "Still active?", 5: "Is this a bill?" };
+const kind = (v) => (v || "").startsWith("correct") ? "ok" : /date outside|amount above|date and amount/.test(v || "") ? "w" : "x";
+const COL = { ok: "var(--good-text)", w: "var(--warn)", x: "var(--bad)" };
+const ICON = { ok: "✓", w: "△", x: "✕" };
+const short = (v) => (v || "").replace("WRONG: ", "").replace("correct: ", "");
+
+$("eyebrow").textContent = `SafeBelt · question simulation · today = ${D.today}`;
+$("ok-b").textContent = pct(D.ok_before);
+$("ok-a").textContent = pct(D.ok_after);
+$("qpc").textContent = `about ${D.per_customer_mean.toFixed(2)} questions per customer this month`;
+$("vt").innerHTML = `<table><thead><tr><th>Verdict</th><th>Before</th><th>After</th><th>Change</th></tr></thead><tbody>${
+  D.summary.map((r) => { const d = r.after - r.before, good = r.verdict.startsWith("correct") ? d > 0 : d < 0;
+    return `<tr><td><span style="color:${COL[kind(r.verdict)]}">${ICON[kind(r.verdict)]}</span> ${esc(short(r.verdict))}</td><td>${r.before.toLocaleString()} (${r["before %"]}%)</td><td>${r.after.toLocaleString()} (${r["after %"]}%)</td><td class="${d === 0 ? "" : good ? "up" : "down"}">${d > 0 ? "+" : ""}${d.toLocaleString()}</td></tr>`; }).join("")}</tbody></table>`;
+$("mstats").innerHTML = Object.entries(D.q_stats).map(([m, s]) => `<div class="mstat"><span>Moment ${m}: ${MOM[m]}</span><b>${s.asked.toLocaleString()}</b><span>questions · ${s.changed.toLocaleString()} changed a bill's result (${s.asked ? Math.round(s.changed / s.asked * 100) : 0}%)</span></div>`).join("");
+
+$("cust").innerHTML = D.customers.map((c) => `<option value="${c.id}">${c.id} · ${c.split === "heldout" ? "held-out" : "seen"} · ${c.q} questions · ${c.changed} bills changed</option>`).join("");
+$("cust").addEventListener("change", render);
+function render() {
+  const cid = $("cust").value;
+  const Q = D.questions.filter((q) => q.customer_id === cid).sort((a, b) => Date.parse(a.asked_on) - Date.parse(b.asked_on));
+  $("phone").innerHTML = `<div class="bar"><span>SafeBelt prototype</span><span>${D.today}</span></div><h3>Questions for you</h3>` +
+    (Q.length ? Q.map((q) => { const skip = (q.text || "").startsWith("(not asked");
+      const opts = (q.options || []).map((o) => { const on = q.answer && (q.answer === o || (o === "Enter amount" && q.answer.startsWith("฿")) || (o === "Pick a date" && q.answer.startsWith("Pick a date")));
+        return `<span class="opt ${on ? "on" : ""}">${on ? "✓ " : ""}${esc(o)}</span>`; }).join("");
+      return `<div class="q ${skip ? "skip" : ""}"><div class="meta"><span>${MOM[q.moment]}</span><span>${esc(q.asked_on)}</span></div><div class="txt">${esc(skip ? `${q.payee}: ${q.text}` : q.text)}</div>
+        ${skip ? "" : `<div class="opts">${opts}</div><div class="ans">answered from truth table: ${esc(q.answer)}</div><div class="eff">→ ${esc(q.effect)}</div>`}</div>`; }).join("")
+      : `<div class="empty">No questions for this customer.</div>`);
+  const B = D.bills.filter((b) => b.customer_id === cid).sort((a, b) => (a.verdict_before === a.verdict_after) - (b.verdict_before === b.verdict_after));
+  $("bills").innerHTML = B.map((b) => { const kb = kind(b.verdict_before), ka = kind(b.verdict_after), chg = b.verdict_before !== b.verdict_after;
+    const pacm = b.P == null ? `<span>no prediction</span>` : `<span>P ${b.P >= 0.5 ? "active" : "inactive"} ${(+b.P).toFixed(2)}</span>${b.T ? `<span>T ${esc(b.T)} (${esc(b.T_window)})</span>` : ""}${b.a_p90 != null ? `<span>A ${baht(b.a_p90)} (P90)</span>` : ""}${b.C != null ? `<span>C ${(+b.C).toFixed(2)}</span>` : ""}<span>source: ${esc(b.source)}</span>`;
+    return `<div class="bill ${chg ? "chg" : ""}"><div class="top"><div><div class="name">${esc(b.payee)}</div><div class="truth">truth: ${esc(b.truth)} · actual: ${esc(b.actual)}</div></div>
+      <div class="vv"><span style="color:${COL[kb]}">${ICON[kb]} ${esc(short(b.verdict_before))}</span>${chg ? `<span>→</span><span style="color:${COL[ka]}">${ICON[ka]} ${esc(short(b.verdict_after))}</span>` : ""}</div></div>
+      <div class="pacm">${pacm}</div>${b.asked ? `<div class="asked">asked · ${esc(b.asked)}</div>` : ""}</div>`; }).join("");
+}
+render();
+</script>

@@ -1,0 +1,328 @@
+<title>SafeBelt v6</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bai+Jamjuree:wght@500;600;700&family=IBM+Plex+Sans+Thai:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout follows the requested flow: 1 correctness, 2 P A T C, 3 one customer (transactions, amount peaks, safe to spend, buffer, shortfall, predictions) */
+:root {
+  --page: #f5f6f3; --surface: #fdfdfb; --ink: #121614; --ink-2: #4b524e; --muted: #868b86; --grid: #e3e5df; --axis: #c4c7bf; --ring: rgba(18,22,20,.10);
+  --bill: #2a78d6; --other: #b9bcb5; --accent: #6250d6; --band: rgba(98,80,214,.14); --future: rgba(42,120,214,.08);
+  --good: #0ca30c; --good-text: #0b6b1d; --warn: #c98500; --bad: #d03b3b;
+  --display: "Bai Jamjuree", "IBM Plex Sans Thai", system-ui, sans-serif;
+  --body: "IBM Plex Sans Thai", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) { color-scheme: dark; --page: #0f1110; --surface: #191b1a; --ink: #eef0ec; --ink-2: #c2c6be; --muted: #8b908a; --grid: #2b2e2c; --axis: #3b3f3c;
+    --ring: rgba(255,255,255,.10); --bill: #3987e5; --other: #4c504d; --accent: #9085e9; --band: rgba(144,133,233,.2); --future: rgba(57,135,229,.1); --good-text: #3ec04a; --warn: #e0a020; }
+}
+:root[data-theme="dark"] { color-scheme: dark; --page: #0f1110; --surface: #191b1a; --ink: #eef0ec; --ink-2: #c2c6be; --muted: #8b908a; --grid: #2b2e2c; --axis: #3b3f3c;
+  --ring: rgba(255,255,255,.10); --bill: #3987e5; --other: #4c504d; --accent: #9085e9; --band: rgba(144,133,233,.2); --future: rgba(57,135,229,.1); --good-text: #3ec04a; --warn: #e0a020; }
+* { box-sizing: border-box; }
+body { background: var(--page); color: var(--ink); font: 15px/1.55 var(--body); padding: 0 20px; }
+main { max-width: 1120px; margin: 0 auto; padding-block: 40px 80px; display: grid; gap: 48px; }
+h1, h2, h3 { font-family: var(--display); margin: 0; text-wrap: balance; }
+h1 { font-size: clamp(28px, 4.6vw, 40px); line-height: 1.1; }
+h2 { font-size: 22px; display: flex; gap: 10px; align-items: baseline; }
+h2 .n { font: 500 13px var(--mono); color: var(--accent); }
+h3 { font-size: 15px; }
+p { margin: 0; max-width: 76ch; color: var(--ink-2); }
+.eyebrow { font: 500 12px/1 var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+section, header { display: grid; gap: 14px; }
+.card { background: var(--surface); border: 1px solid var(--ring); border-radius: 8px; padding: 18px; display: grid; gap: 10px; align-content: start; min-width: 0; }
+.grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 14px; }
+.grid3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px; }
+.hero { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; }
+.hero .card b { font: 700 32px/1 var(--display); }
+.hero .card span { font-size: 13px; color: var(--muted); }
+.tbl { overflow-x: auto; }
+table { border-collapse: collapse; font-size: 13px; font-variant-numeric: tabular-nums; width: 100%; }
+th, td { padding: 6px 10px; border-bottom: 1px solid var(--grid); text-align: right; white-space: nowrap; }
+th:first-child, td:first-child { text-align: left; white-space: normal; }
+th { font-weight: 600; }
+.up { color: var(--good-text); font-weight: 600; } .down { color: var(--bad); font-weight: 600; }
+.kv { display: grid; grid-template-columns: 1fr auto auto; gap: 4px 14px; font-size: 13.5px; }
+.kv b { font: 600 13.5px var(--mono); text-align: right; }
+.kv .h { font-size: 12px; color: var(--muted); }
+.chart { width: 100%; overflow-x: auto; }
+svg { display: block; width: 100%; height: auto; font-family: var(--body); }
+svg text { fill: var(--muted); font-size: 11px; }
+svg .grid { stroke: var(--grid); } svg .axis { stroke: var(--axis); }
+.controls { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+select, button { font: 500 13px var(--mono); padding: 7px 11px; border-radius: 4px; border: 1px solid var(--ring); background: var(--surface); color: var(--ink); }
+button { cursor: pointer; } button[aria-pressed="true"] { background: var(--ink); color: var(--surface); border-color: var(--ink); }
+select:focus-visible, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 13px; color: var(--ink-2); }
+.legend i { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 6px; vertical-align: -1px; }
+.calc { display: grid; grid-template-columns: 1fr auto; gap: 0; font-size: 13.5px; }
+.calc > div { padding: 6px 0; border-bottom: 1px solid var(--grid); }
+.calc .amt { font: 500 13.5px var(--mono); text-align: right; padding-left: 14px; }
+.calc .sub { padding-left: 18px; color: var(--ink-2); font-size: 12.5px; }
+.calc .how { color: var(--muted); font-size: 12px; display: block; }
+.calc .tot { font-weight: 700; } .calc .tot.amt { font-size: 15px; }
+.big { font: 700 34px/1 var(--display); }
+.peaks { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 12px; }
+.peak { background: var(--surface); border: 1px solid var(--ring); border-radius: 8px; padding: 10px 12px; display: grid; gap: 4px; }
+.peak b { font-size: 13px; } .peak .t { font-size: 12px; color: var(--muted); }
+.bill { background: var(--surface); border: 1px solid var(--ring); border-radius: 8px; padding: 10px 12px; display: grid; gap: 5px; border-left: 4px solid var(--good); }
+.bill.w { border-left-color: var(--warn); } .bill.x { border-left-color: var(--bad); }
+.bill .top { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 4px 12px; }
+.bill .nm { font-weight: 600; } .bill .tr { font-size: 12px; color: var(--muted); }
+.pacm { display: flex; flex-wrap: wrap; gap: 3px 14px; font: 500 12.5px var(--mono); color: var(--ink-2); }
+.asked { font-size: 12.5px; color: var(--accent); }
+.bills { display: grid; gap: 8px; }
+.note { font-size: 13px; color: var(--muted); }
+#tip { position: fixed; pointer-events: none; background: var(--ink); color: var(--surface); font: 500 12px/1.5 var(--mono); padding: 7px 9px; border-radius: 4px; max-width: 320px; z-index: 10; }
+</style>
+<main>
+  <header>
+    <div class="eyebrow" id="eyebrow"></div>
+    <h1>SafeBelt v6: model, questions and safe to spend</h1>
+    <p id="intro">Synthetic customers, each checked on their own payday. The model predicts each recurring bill (P, A, T, C); a separate step asks the customer a few questions; a third step turns the bills into a safe-to-spend amount until the next payday (balance − upcoming bills until next payday, minus a safety buffer of 20% of that). Everything is checked against the truth table and what really happened.</p>
+  </header>
+
+  <section>
+    <h2><span class="n">1</span>Correctness: model only vs model + questions</h2>
+    <div class="hero" id="hero"></div>
+    <div class="grid2">
+      <div class="card"><h3>Every bill on the test day, checked against the truth</h3><div class="tbl" id="verdicts"></div></div>
+      <div class="card"><h3>Money until next payday (average per customer)</h3><div class="tbl" id="moneysum"></div>
+        <p class="note">Shortfall = bills really paid between today and the real next payday that the reserve for the same bill did not cover. Most of it comes from bills the model had not seen twice yet.</p></div>
+    </div>
+    <div class="card"><h3>Bills fully correct by how long the customer has been with the bank</h3><div class="tbl" id="byage"></div>
+      <p class="note">History = months from the first account opening to today. Buckets are cumulative: "0 – 6 months" includes every customer with up to 6 months of history.</p></div>
+  </section>
+
+  <section>
+    <h2><span class="n">2</span>P, A, T, C: how good is each output</h2>
+    <div class="grid3" id="pacm"></div>
+    <div class="grid2">
+      <div class="card"><h3>P: will it be paid again?</h3><div class="chart" id="prel"></div><p class="note">On the diagonal = honest. Dot size = number of bills.</p></div>
+      <div class="card"><h3>C: paid inside the T window at or below A_P90?</h3><div class="chart" id="crel"></div><p class="note">When C says 80%, it should happen about 80% of the time.</p></div>
+    </div>
+  </section>
+
+  <section>
+    <h2><span class="n">3</span>One customer</h2>
+    <div class="controls">
+      <label for="sortc" class="note">Sort by</label>
+      <select id="sortc"><option value="short_desc">biggest overall shortfall</option><option value="short_asc">smallest overall shortfall</option><option value="safe_asc">lowest safe to spend</option><option value="safe_desc">highest safe to spend</option><option value="gain">most improved by questions</option><option value="id">customer ID (low → high)</option><option value="id_desc">customer ID (high → low)</option></select>
+      <label for="hist" class="note">History</label><select id="hist"><option value="0">all</option><option value="3">0 – 3 months</option><option value="6">0 – 6 months</option><option value="12">0 – 12 months</option><option value="24">0 – 24 months</option></select>
+      <label class="note" style="display:flex;gap:6px;align-items:center"><input type="checkbox" id="only-short"> only overall short &gt; ฿500</label>
+      <label for="cust" class="note">Customer</label><select id="cust"></select><span class="note" id="cust-count"></span>
+      <div role="group" aria-label="Version" style="display:flex;gap:6px"><button type="button" id="v-model" aria-pressed="true">Model only</button><button type="button" id="v-questions" aria-pressed="false">Model + questions</button></div>
+    </div>
+    <div class="card"><h3>Transactions (outgoing) · recurring bills highlighted</h3>
+      <div class="legend"><span><i style="background:var(--bill)"></i>recurring bill (this version)</span><span><i style="background:var(--other)"></i>not recurring</span><span><i style="background:var(--bad)"></i>real bill the model did not call recurring</span><span><i style="background:var(--future);border-radius:2px;width:16px"></i>today → next payday (what really happened)</span></div>
+      <div class="chart" id="txplot"></div>
+      <div class="chart" id="txmonth"></div>
+      <details><summary class="note" style="cursor:pointer">Month-by-month counts (table)</summary><div class="tbl" id="txmonth-tbl" style="max-height:360px;overflow:auto"></div></details></div>
+    <div class="card"><h3>Bills per payee (how payments to one payee are split into separate bills)</h3>
+      <p class="note">Each curve is the spread of past amounts to one payee (log scale). Dots are the bill levels; payments to a person are split at the purple lines into separate bills, e.g. rent and utilities to the same landlord. The split is chosen by a Bayesian model that scores both the amounts and the payment dates: a payee is split only if each part has its own amount level <b>and</b> its own regular schedule.</p>
+      <div class="peaks" id="peaks"></div></div>
+    <div class="grid2">
+      <div class="card"><h3>Safe to spend until next payday</h3><p class="note">Each bill reserves A_P90 ÷ cycle days (rounded down) × (days to next payday + 1), and at least one full A_P90 when it is due before payday. Spendable = balance − upcoming bills until next payday. Safety buffer = 20% of spendable. Safe to spend = spendable − buffer.</p><div class="calc" id="calc"></div></div>
+      <div class="card"><h3>Shortfall: bills really paid before payday</h3><div id="short-overall"></div><div class="tbl" id="short"></div><p class="note" id="short-note"></p></div>
+    </div>
+    <div class="card"><h3>Model prediction for each bill</h3><div class="bills" id="bills"></div></div>
+  </section>
+</main>
+<div id="tip" hidden></div>
+<script>
+const D = /*DATA*/null;
+const $ = (id) => document.getElementById(id);
+const NS = "http://www.w3.org/2000/svg";
+const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const pct = (v) => (v * 100).toFixed(1) + "%";
+const baht = (v) => (v < 0 ? "−" : "") + "฿" + Math.abs(Math.round(v)).toLocaleString("en-US");
+const short = (v) => { const a = Math.abs(v); return a >= 1e6 ? (a / 1e6).toFixed(1) + "M" : a >= 1e3 ? Math.round(a / 1e3) + "k" : Math.round(a); };
+function el(t, a, p) { const e = document.createElementNS(NS, t); for (const k in a) e.setAttribute(k, a[k]); p && p.appendChild(e); return e; }
+function txt(p, x, y, s, a = {}) { const t = el("text", { x, y, ...a }, p); t.textContent = s; return t; }
+const tip = $("tip");
+function hover(n, html) { n.addEventListener("pointermove", (e) => { tip.innerHTML = html; tip.hidden = false; tip.style.left = Math.min(e.clientX + 14, innerWidth - tip.offsetWidth - 8) + "px"; tip.style.top = e.clientY + 14 + "px"; });
+  n.addEventListener("pointerleave", () => (tip.hidden = true)); }
+const kind = (v) => (v || "").startsWith("correct") ? "ok" : /date outside|amount above|date and amount/.test(v || "") ? "w" : "x";
+const COL = { ok: "var(--good-text)", w: "var(--warn)", x: "var(--bad)" }, ICON = { ok: "✓", w: "△", x: "✕" };
+const plain = (v) => (v || "").replace("WRONG: ", "").replace("correct: ", "");
+let T0 = 0;          // the selected customer's "today" (day after their payday), set in render()
+const dstr = (d) => { const x = new Date((T0 + d) * 864e5); return x.toISOString().slice(0, 10); };
+
+$("eyebrow").textContent = `SafeBelt · synthetic data ${D.name} · today = ${D.today}`;
+
+/* 1 correctness */
+const C = D.correct, M = D.money;
+$("hero").innerHTML = [["Bills fully correct · model only", pct(C.model), `${C.rows.toLocaleString()} bills`], ["Bills fully correct · model + questions", pct(C.questions), `about ${D.questions_per_customer.toFixed(1)} questions per customer this month`],
+  ["Bill money correct · model only", pct(C.model_money), "weighted by amount"], ["Bill money correct · model + questions", pct(C.questions_money), "weighted by amount"]]
+  .map(([t, b, s]) => `<div class="card"><span>${t}</span><b>${b}</b><span>${s}</span></div>`).join("");
+$("verdicts").innerHTML = `<table><thead><tr><th>Verdict</th><th>Model only</th><th>+ questions</th><th>Change</th></tr></thead><tbody>${
+  D.verdicts.map((r) => { const d = r.after - r.before, good = r.verdict.startsWith("correct") ? d > 0 : d < 0;
+    return `<tr><td><span style="color:${COL[kind(r.verdict)]}">${ICON[kind(r.verdict)]}</span> ${esc(plain(r.verdict))}</td><td>${r.before.toLocaleString()}</td><td>${r.after.toLocaleString()}</td><td class="${d === 0 ? "" : good ? "up" : "down"}">${d > 0 ? "+" : ""}${d.toLocaleString()}</td></tr>`; }).join("")}</tbody></table>`;
+$("byage").innerHTML = `<table><thead><tr><th>History</th><th>Customers</th><th>Bills</th><th>Model only</th><th>+ questions</th><th>Money correct · model only</th><th>Money correct · + questions</th></tr></thead><tbody>${
+  D.by_age.map((r) => `<tr><td>${r.label}</td><td>${r.customers.toLocaleString()}</td><td>${r.bills.toLocaleString()}</td><td>${r.model == null ? "–" : pct(r.model)}</td><td>${r.questions == null ? "–" : pct(r.questions)}</td><td>${r.model_money == null ? "–" : pct(r.model_money)}</td><td>${r.questions_money == null ? "–" : pct(r.questions_money)}</td></tr>`).join("")}</tbody></table>`;
+const mrow = (n, f) => `<tr><td>${n}</td><td>${f(M.model)}</td><td>${f(M.questions)}</td></tr>`;
+$("moneysum").innerHTML = `<table><thead><tr><th></th><th>Model only</th><th>+ questions</th></tr></thead><tbody>
+  ${mrow("Upcoming bills reserved", (m) => baht(m.upcoming))}${mrow("Bills really paid", (m) => baht(m.real))}${mrow("Bill shortfall", (m) => baht(m.short))}
+  ${mrow("Customers short > ฿500", (m) => pct(m.short500))}${mrow("Customers short > ฿2,000", (m) => pct(m.short2000))}${mrow("Reserved above need", (m) => baht(m.extra))}
+  ${mrow("<b>Overall shortfall</b> after using the safety buffer (avg)", (m) => baht(m.overall_short))}${mrow("Customers overall short (buffer − shortfall < 0)", (m) => pct(m.overall_neg))}${mrow("Customers overall short > ฿2,000", (m) => pct(m.overall_2000))}
+  <tr><td>Non-recurring spending per month (median customer)</td><td colspan="2">${baht(D.nonrec_month.median)} <span class="note">(10% of customers below ${baht(D.nonrec_month.p10)}, 10% above ${baht(D.nonrec_month.p90)})</span></td></tr></tbody></table>`;
+
+/* 2 P A T C */
+const P = D.pacm;
+$("pacm").innerHTML = `
+  <div class="card"><h3>Detected (is it a bill?)</h3><div class="kv"><span class="h"></span><span class="h">all</span><span class="h">held-out</span>
+    <span>Precision</span><b>${pct(P.det.all.precision)}</b><b>${pct((P.det.heldout || P.det.all).precision)}</b><span>Recall</span><b>${pct(P.det.all.recall)}</b><b>${pct((P.det.heldout || P.det.all).recall)}</b></div></div>
+  <div class="card"><h3>T (next date)</h3><div class="kv"><span class="h"></span><span class="h">model</span><span class="h">B1</span>
+    <span>Days off</span><b>${P.t_mae.toFixed(1)}</b><b>${P.b1_mae.toFixed(1)}</b><span>Within 3 days</span><b>${pct(P.t_3d)}</b><b>${pct(P.b1_3d)}</b><span>Inside window (target 80%)</span><b>${pct(P.in_win)}</b><b>–</b></div></div>
+  <div class="card"><h3>A (amount, P90)</h3><div class="kv" style="grid-template-columns:1fr auto"><span>Typical error</span><b>${pct(P.ape)}</b><span>Real amount ≤ P90 (target 90%)</span><b>${pct(P.amt_ok)}</b></div></div>`;
+function rel(host, R) {
+  const W = 460, H = 280, L = 44, B = 30, T = 10, s = el("svg", { viewBox: `0 0 ${W} ${H}`, role: "img", "aria-label": "Reliability" }, host);
+  const x = (v) => L + v * (W - L - 12), y = (v) => T + (1 - v) * (H - T - B);
+  [0, .25, .5, .75, 1].forEach((v) => { el("line", { x1: x(v), x2: x(v), y1: T, y2: H - B, class: "grid" }, s); el("line", { x1: L, x2: W - 12, y1: y(v), y2: y(v), class: "grid" }, s);
+    txt(s, x(v), H - B + 14, Math.round(v * 100) + "%", { "text-anchor": "middle" }); txt(s, L - 6, y(v) + 4, Math.round(v * 100) + "%", { "text-anchor": "end" }); });
+  txt(s, (L + W) / 2, H - 2, "model says", { "text-anchor": "middle" }); txt(s, L + 4, T + 12, "really happened");
+  el("line", { x1: x(0), y1: y(0), x2: x(1), y2: y(1), stroke: "var(--axis)", "stroke-width": 1.5 }, s);
+  const mx = Math.max(...R.map((r) => r.n));
+  R.forEach((r) => hover(el("circle", { cx: x(r.says), cy: y(r.happened), r: 4 + 10 * Math.sqrt(r.n / mx), fill: "var(--accent)", opacity: .85, stroke: "var(--surface)", "stroke-width": 2 }, s),
+    `says ${pct(r.says)} · happened ${pct(r.happened)}<br>${r.n.toLocaleString()} bills`));
+}
+rel($("prel"), P.p_rel); rel($("crel"), P.c_rel);
+
+/* 3 customer */
+let ver = "model";
+function fillCustomers(keep) {
+  const sort = $("sortc").value, only = $("only-short").checked, sh = (c) => -(c.money["overall_" + ver] ?? 0);   // overall shortfall: positive = short
+  let idx = D.customers.map((c, i) => i);
+  if (only) idx = idx.filter((i) => sh(D.customers[i]) > 500);
+  const lim = +$("hist").value;
+  if (lim) idx = idx.filter((i) => D.customers[i].hist <= lim);
+  const gain = (c) => (c.money.overall_questions ?? 0) - (c.money.overall_model ?? 0);
+  const safe = (c) => c.money["safe_" + ver] ?? 0;
+  idx.sort(sort === "short_desc" ? (a, b) => sh(D.customers[b]) - sh(D.customers[a]) : sort === "short_asc" ? (a, b) => sh(D.customers[a]) - sh(D.customers[b])
+    : sort === "safe_asc" ? (a, b) => safe(D.customers[a]) - safe(D.customers[b]) : sort === "safe_desc" ? (a, b) => safe(D.customers[b]) - safe(D.customers[a])
+    : sort === "gain" ? (a, b) => gain(D.customers[b]) - gain(D.customers[a]) : sort === "id_desc" ? (a, b) => D.customers[b].id.localeCompare(D.customers[a].id) : (a, b) => D.customers[a].id.localeCompare(D.customers[b].id));
+  $("cust").innerHTML = idx.map((i) => { const c = D.customers[i], m = c.money;
+    return `<option value="${i}">${c.id} · ${c.split === "heldout" ? "held-out" : "seen"} · ${c.hist.toFixed(0)} mo history · salary ${m.salary_received ? baht(m.salary_received) : "–"} · safe ${baht(m["safe_" + ver])} · overall ${m["overall_" + ver] < 0 ? "short " + baht(-m["overall_" + ver]) : "OK +" + baht(m["overall_" + ver])} (${ver === "model" ? "model only" : "with questions"})</option>`; }).join("");
+  $("cust-count").textContent = `${idx.length} customers`;
+  if (keep != null && idx.includes(keep)) $("cust").value = keep;
+}
+fillCustomers();
+$("cust").addEventListener("change", render);
+$("sortc").addEventListener("change", () => { fillCustomers(); render(); });
+$("only-short").addEventListener("change", () => { fillCustomers(); if ($("cust").options.length) render(); });
+$("hist").addEventListener("change", () => { fillCustomers(); if ($("cust").options.length) render(); });
+[["v-model", "model"], ["v-questions", "questions"]].forEach(([id, v]) => $(id).addEventListener("click", () => { ver = v;
+  $("v-model").setAttribute("aria-pressed", v === "model"); $("v-questions").setAttribute("aria-pressed", v === "questions");
+  fillCustomers(+$("cust").value); render(); }));
+
+function txplot(c) {
+  const host = $("txplot"); host.innerHTML = "";
+  const W = 1040, L = 60, T = 12, B = 28, H = 330, dmin = Math.min(...c.txns.map((t) => t[0]), -30), dmax = Math.max(c.money.days_to_payday, 5);
+  const amts = c.txns.map((t) => t[1]), lo = Math.log10(Math.max(10, Math.min(...amts))), hi = Math.log10(Math.max(...amts) * 1.2);
+  const s = el("svg", { viewBox: `0 0 ${W} ${H}`, role: "img", "aria-label": "Transactions" }, host);
+  const x = (d) => L + (d - dmin) / (dmax - dmin) * (W - L - 10), y = (v) => T + (1 - (Math.log10(Math.max(v, 10)) - lo) / (hi - lo)) * (H - T - B);
+  el("rect", { x: x(0), y: T, width: x(dmax) - x(0), height: H - T - B, fill: "var(--future)" }, s);
+  for (let p = Math.ceil(lo); p <= hi; p++) { const v = 10 ** p; el("line", { x1: L, x2: W - 10, y1: y(v), y2: y(v), class: "grid" }, s); txt(s, L - 6, y(v) + 4, "฿" + short(v), { "text-anchor": "end" }); }
+  // calendar months (gridline at every month start; labels thinned when the history is long)
+  const MN = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  const months = [];
+  for (let d = dmin; d <= dmax; d++) { const k = dstr(d).slice(0, 7); if (!months.length || months[months.length - 1].k !== k) months.push({ k, start: d }); }
+  months.forEach((m, i) => { m.end = i + 1 < months.length ? months[i + 1].start : dmax + 1; });
+  const every = Math.max(1, Math.ceil(months.length / 13));
+  months.forEach((m, i) => { el("line", { x1: x(m.start), x2: x(m.start), y1: T, y2: H - B, class: "grid" }, s);
+    if (i % every === 0) txt(s, x((m.start + m.end) / 2), H - 8, `${MN[+m.k.slice(5) - 1]} ${m.k.slice(2, 4)}`, { "text-anchor": "middle" }); });
+  el("line", { x1: x(0), x2: x(0), y1: T, y2: H - B, stroke: "var(--ink)", "stroke-width": 1.5 }, s); txt(s, x(0) + 4, T + 10, "today (payday + 1)");
+  monthStrip(c, months, x, W, L, MN);
+  txt(s, x(dmax) - 4, T + 10, "next payday", { "text-anchor": "end" });
+  const order = c.txns.slice().sort((a, b) => (c.groups[a[2]][ver] ? 1 : 0) - (c.groups[b[2]][ver] ? 1 : 0));
+  order.forEach((t) => { const g = c.groups[t[2]], rec = g[ver], miss = !rec && g.truth;
+    const dot = el("circle", { cx: x(t[0]), cy: y(t[1]), r: rec || miss ? 3.2 : 2.2, fill: rec ? "var(--bill)" : miss ? "var(--bad)" : "var(--other)", opacity: rec || miss ? .95 : .55 }, s);
+    if (rec || miss) hover(dot, `${dstr(t[0])} · ${baht(t[1])}<br>${esc(g.payee)}<br>${rec ? "recurring bill" : "real bill, not called recurring"}${t[0] >= 0 ? "<br>(after today: real outcome)" : ""}`); });
+}
+
+function monthStrip(c, months, x, W, L, MN) {
+  // payments per calendar month: recurring bills (this version) vs everything else, plus real bills the model missed
+  const agg = Object.fromEntries(months.map((m) => [m.k, { rec: 0, recAmt: 0, oth: 0, othAmt: 0, miss: 0, missAmt: 0 }]));
+  c.txns.forEach((t) => { const k = dstr(t[0]).slice(0, 7), a = agg[k]; if (!a) return; const g = c.groups[t[2]];
+    if (g[ver]) { a.rec++; a.recAmt += t[1]; } else { a.oth++; a.othAmt += t[1]; if (g.truth) { a.miss++; a.missAmt += t[1]; } } });
+  const H = 150, T = 18, B = 20, host = $("txmonth"); host.innerHTML = "";
+  const s = el("svg", { viewBox: `0 0 ${W} ${H}`, role: "img", "aria-label": "Payments per month" }, host);
+  const mx = Math.max(1, ...months.map((m) => agg[m.k].rec + agg[m.k].oth)), y = (v) => T + (1 - v / mx) * (H - T - B);
+  [0, mx / 2, mx].forEach((v) => { el("line", { x1: L, x2: W - 10, y1: y(v), y2: y(v), class: "grid" }, s); txt(s, L - 6, y(v) + 4, Math.round(v), { "text-anchor": "end" }); });
+  txt(s, L + 4, 11, "payments per month", {});
+  months.forEach((m, i) => { const a = agg[m.k], x0 = x(m.start) + 1.5, w = Math.max(2, x(m.end) - x(m.start) - 3);
+    if (a.rec) el("rect", { x: x0, y: y(a.rec), width: w, height: y(0) - y(a.rec), fill: "var(--bill)" }, s);
+    if (a.oth) el("rect", { x: x0, y: y(a.rec + a.oth), width: w, height: Math.max(0, y(a.rec) - y(a.rec + a.oth) - 2), fill: "var(--other)" }, s);
+    if (w > 22 && a.rec && y(0) - y(a.rec) > 15) txt(s, x0 + w / 2, y(a.rec) + 11, a.rec, { "text-anchor": "middle", fill: "var(--surface)", "font-size": 10 });
+    const hit = el("rect", { x: x(m.start), y: T, width: x(m.end) - x(m.start), height: H - T - B, fill: "transparent" }, s);
+    hover(hit, `<b>${MN[+m.k.slice(5) - 1]} ${m.k.slice(0, 4)}</b><br>recurring bills: ${a.rec} payments · ${baht(a.recAmt)}<br>other spending: ${a.oth} payments · ${baht(a.othAmt)}${a.miss ? `<br>of which real bills missed: ${a.miss} · ${baht(a.missAmt)}` : ""}`);
+    if (i % Math.max(1, Math.ceil(months.length / 13)) === 0) txt(s, x((m.start + m.end) / 2), H - 6, `${MN[+m.k.slice(5) - 1]} ${m.k.slice(2, 4)}`, { "text-anchor": "middle" }); });
+  $("txmonth-tbl").innerHTML = `<table><thead><tr><th>Month</th><th>Recurring bills</th><th>Amount</th><th>Other spending</th><th>Amount</th><th>Real bills missed</th></tr></thead><tbody>${
+    months.slice().reverse().map((m) => { const a = agg[m.k]; return `<tr><td>${MN[+m.k.slice(5) - 1]} ${m.k.slice(0, 4)}</td><td>${a.rec}</td><td>${baht(a.recAmt)}</td><td>${a.oth}</td><td>${baht(a.othAmt)}</td><td>${a.miss ? `${a.miss} · ${baht(a.missAmt)}` : "–"}</td></tr>`; }).join("")}</tbody></table>`;
+}
+
+function kde(amts) {
+  const la = amts.map((v) => Math.log(Math.max(v, 1))), lo = Math.min(...la) - 0.4, hi = Math.max(...la) + 0.4, xs = [], ys = [];
+  for (let i = 0; i <= 120; i++) { const v = lo + (hi - lo) * i / 120; xs.push(v); ys.push(la.reduce((a, l) => a + Math.exp(-0.5 * ((v - l) / 0.08) ** 2), 0)); }
+  return { xs, ys, lo, hi };
+}
+function peaks(c) {
+  const G = c.groups.filter((g) => g.peaks.length && (g[ver] || g.truth || (g.type === "P" && g.peaks.length > 1))).sort((a, b) => b.cuts.length - a.cuts.length || b.n - a.n).slice(0, 9);
+  $("peaks").innerHTML = G.length ? "" : `<p class="note">No payee with enough payments to show amount peaks.</p>`;
+  G.forEach((g) => {
+    const div = document.createElement("div"); div.className = "peak";
+    div.innerHTML = `<b>${esc(g.payee)}</b><span class="t">${g.n} payments · ${g[ver] ? "recurring bill" : "not recurring"}${g.truth ? " · truth: bill" : ""}${g.cuts.length ? ` · split into ${g.cuts.length + 1} series` : ""}</span><div class="chart"></div>
+      <span class="t">${g.peaks.map((p) => `peak ${baht(p.amount)} (${p.n} payments)`).join(" · ")}</span>`;
+    $("peaks").appendChild(div);
+    const k = kde(g.amounts), W = 300, H = 110, L = 6, B = 18, s = el("svg", { viewBox: `0 0 ${W} ${H}`, role: "img", "aria-label": "Amount spread" }, div.querySelector(".chart"));
+    const mx = Math.max(...k.ys), x = (v) => L + (v - k.lo) / (k.hi - k.lo) * (W - 2 * L), y = (v) => 8 + (1 - v / mx) * (H - 8 - B);
+    el("path", { d: "M" + k.xs.map((v, i) => `${x(v)},${y(k.ys[i])}`).join("L") + `L${x(k.hi)},${y(0)}L${x(k.lo)},${y(0)}Z`, fill: g[ver] ? "var(--bill)" : "var(--other)", opacity: .35 }, s);
+    el("path", { d: "M" + k.xs.map((v, i) => `${x(v)},${y(k.ys[i])}`).join("L"), fill: "none", stroke: g[ver] ? "var(--bill)" : "var(--muted)", "stroke-width": 1.5 }, s);
+    g.cuts.forEach((cv) => el("line", { x1: x(Math.log(cv)), x2: x(Math.log(cv)), y1: 6, y2: H - B, stroke: "var(--accent)", "stroke-width": 1.5 }, s));
+    g.peaks.forEach((p) => { const px = x(Math.log(p.amount)); el("circle", { cx: px, cy: y(Math.max(...k.ys.filter((_, i) => Math.abs(k.xs[i] - Math.log(p.amount)) < 0.05)) || 0), r: 3.5, fill: "var(--ink)" }, s);
+      txt(s, px, H - 4, baht(p.amount), { "text-anchor": "middle", fill: "var(--ink)" }); });
+  });
+}
+
+function calc(c) {
+  const m = c.money, L = c.lines[ver];
+  const row = (label, how, amt, cls = "") => `<div class="${cls}">${label}${how ? `<span class="how">${esc(how)}</span>` : ""}</div><div class="amt ${cls}">${amt}</div>`;
+  const bills = L.filter((l) => l.reserve > 0.5).sort((a, b) => b.reserve - a.reserve), zero = L.filter((l) => l.reserve <= 0.5);
+  const sal = m.salary_received ? `salary ${baht(m.salary_received)} received ${m.salary_date}` : "no regular salary";
+  $("calc").innerHTML = `<div style="grid-column:1/-1;display:flex;flex-wrap:wrap;gap:8px 28px;align-items:baseline;padding-bottom:8px">
+      <div><div class="note">Safe to spend</div><div class="big">${baht(m["safe_" + ver])}</div></div>
+      <div><div class="note">Salary</div><div class="big" style="font-size:26px;color:var(--ink-2)">${m.salary_received ? baht(m.salary_received) : "–"}</div><div class="note">${m.salary_received ? "received " + m.salary_date : "no regular salary"}</div></div>
+      <div class="note" style="flex-basis:100%">from ${m.today} until next payday ${m.next_payday} (${m.days_to_payday} days${m.regular_salary ? ", payday from salary history" : ", no regular salary: 30-day window"})</div></div>` +
+    row("Balance today", m.salary_received ? `includes this payday's salary ${baht(m.salary_received)} (${m.salary_date})` : "no salary this cycle", baht(m.balance), "tot") +
+    row(`− Upcoming bills until payday (${bills.length} bills)`, "", "−" + baht(m["upcoming_" + ver]), "tot") +
+    bills.map((l) => row(`<span class="sub">${esc(l.payee)}</span>`, l.how, "−" + baht(l.reserve), "sub")).join("") +
+    (zero.length ? row(`<span class="sub">${zero.length} more bills not due before payday</span>`, zero.map((l) => l.payee).join(", "), "฿0", "sub") : "") +
+    row("= Spendable money", "balance today − upcoming bills until next payday", baht(m["spendable_" + ver]), "tot") +
+    row("− Safety buffer", m["spendable_" + ver] > 0 ? `20% × spendable money ${baht(m["spendable_" + ver])}` : "spendable money is negative, so no buffer", "−" + baht(m["buffer_" + ver]), "tot") +
+    row("= Safe to spend", "spendable money − safety buffer (= 80% of spendable)", baht(m["safe_" + ver]), "tot") +
+    row("Average non-recurring spending per month", `everything outside detected bills, own transfers excluded, last ${Math.round(m.nonrec_days)} days, per month`, baht(m.nonrec_month_avg), "") +
+    row(`<span class="note">What really happened until payday: bills ${baht(m.real_bills)}, other spending ${baht(m.real_nonrecurring)}</span>`, "", "", "");
+}
+
+function shortfall(c) {
+  const S = c.short[ver], m = c.money;
+  $("short").innerHTML = S.length ? `<table><thead><tr><th>Bill paid</th><th>Date</th><th>Amount</th><th>Covered</th><th>Short</th></tr></thead><tbody>${
+    S.map((r) => `<tr><td>${esc(r.payee)}${r.bill ? `<br><span class="note">${esc(r.bill)}${r.reserved_for_it ? "" : " · no reservation"}</span>` : ""}</td><td>${r.date}</td><td>${baht(r.amount)}</td><td>${baht(r.covered)}</td>
+      <td class="${r.short > 0.5 ? "down" : "up"}">${r.short > 0.5 ? baht(r.short) : "✓"}</td></tr>`).join("")}</tbody></table>` : `<p class="note">No real bills before payday.</p>`;
+  const ov = m["overall_" + ver];
+  $("short-overall").innerHTML = `<div class="calc"><div>Safety buffer</div><div class="amt">${baht(m["buffer_" + ver])}</div><div>− Bill shortfall</div><div class="amt">−${baht(m["bill_short_" + ver])}</div>
+    <div class="tot">= Overall ${ov < 0 ? "<span style=\"color:var(--bad)\">short</span>" : "<span style=\"color:var(--good-text)\">covered by the buffer</span>"}</div><div class="amt tot" style="color:${ov < 0 ? "var(--bad)" : "var(--good-text)"}">${ov < 0 ? "−" + baht(-ov) : baht(ov) + " left"}</div></div>`;
+  $("short-note").textContent = `Bills really paid from today until the real next payday (${m.real_next_payday}; the app estimated ${m.next_payday}). Each payment is matched to the reserve made for the same bill. Total shortfall ${baht(m["bill_short_" + ver])}; reserved above need ${baht(m["reserved_extra_" + ver])}.`;
+}
+
+function bills(c) {
+  const B = c.bills[ver];
+  $("bills").innerHTML = B.length ? B.map((b) => { const k = kind(b.verdict);
+    const pacm = b.P == null || b.detected === false || b.detected === "False" ? `<span>model: not a bill / no prediction</span>` :
+      `<span>P ${b.P >= .5 ? "active" : "inactive"} ${(+b.P).toFixed(2)}</span><span>T ${esc(b.T)} (${esc(b.T_window)})</span><span>A ${baht(b.a_p90)} (P90)</span><span>C ${(+b.C).toFixed(2)}</span>${b.source && b.source !== "model" ? `<span>source: ${esc(b.source)}</span>` : ""}`;
+    return `<div class="bill ${k === "ok" ? "" : k}"><div class="top"><div><div class="nm">${esc(b.payee)}</div><div class="tr">truth: ${esc(b.truth)} · actual: ${esc(b.actual)}</div></div>
+      <div style="font:600 12.5px var(--mono);color:${COL[k]}">${ICON[k]} ${esc(plain(b.verdict))}</div></div><div class="pacm">${pacm}</div>${b.asked ? `<div class="asked">asked · ${esc(b.asked)}</div>` : ""}</div>`; }).join("")
+    : `<p class="note">No bills.</p>`;
+}
+
+function render() { const c = D.customers[+$("cust").value]; T0 = Date.parse(c.money.today + "T00:00:00Z") / 864e5; txplot(c); peaks(c); calc(c); shortfall(c); bills(c); }
+render();
+</script>

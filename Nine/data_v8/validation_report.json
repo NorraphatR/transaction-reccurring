@@ -1,0 +1,183 @@
+{
+  "checks_passed": true,
+  "customers": 2500,
+  "accounts": 3500,
+  "transactions": 2688260,
+  "transaction_labels": 2688260,
+  "recurring_series": 47811,
+  "heldout_customers": 375,
+  "heldout_share": 0.15,
+  "second_account_share": 0.4,
+  "first_transaction": "2024-09-30 00:45:51",
+  "last_transaction": "2026-09-30 22:59:54",
+  "minimum_balance": 1.0,
+  "same_bank_own_transfer_pairs": 15575,
+  "usd_transactions": 12965,
+  "transaction_counts_by_kind": {
+    "habitual": 1724877,
+    "habit": 332722,
+    "obligation": 488395,
+    "refund": 3362,
+    "income": 46073,
+    "own_transfer": 46878,
+    "one_off": 6108,
+    "reimbursement": 6690,
+    "recurring_transfer": 33155
+  },
+  "flags": {
+    "duplicate_charge": 3362,
+    "duplicate_refund": 3362,
+    "paid_at_counter": 3589,
+    "split_part1": 2167,
+    "split_part2": 2167,
+    "catch_up_double": 600,
+    "shared_meal": 6690,
+    "posting_delay": 9236,
+    "paid_late": 5410,
+    "bonus": 793,
+    "topup_when_short": 580
+  },
+  "series_statuses": {
+    "active": 45900,
+    "cancelled": 385,
+    "completed": 773,
+    "switched": 456,
+    "paused_resumed": 297
+  },
+  "series_by_kind_and_cycle": [
+    {
+      "kind": "habit",
+      "cycle_type": "income_linked",
+      "series": 1122
+    },
+    {
+      "kind": "habit",
+      "cycle_type": "interval",
+      "series": 3330
+    },
+    {
+      "kind": "habit",
+      "cycle_type": "irregular",
+      "series": 4740
+    },
+    {
+      "kind": "income",
+      "cycle_type": "calendar",
+      "series": 2219
+    },
+    {
+      "kind": "income",
+      "cycle_type": "irregular",
+      "series": 375
+    },
+    {
+      "kind": "obligation",
+      "cycle_type": "calendar",
+      "series": 25285
+    },
+    {
+      "kind": "obligation",
+      "cycle_type": "interval",
+      "series": 6673
+    },
+    {
+      "kind": "own_transfer",
+      "cycle_type": "income_linked",
+      "series": 1890
+    },
+    {
+      "kind": "own_transfer",
+      "cycle_type": "irregular",
+      "series": 109
+    },
+    {
+      "kind": "recurring_transfer",
+      "cycle_type": "calendar",
+      "series": 285
+    },
+    {
+      "kind": "recurring_transfer",
+      "cycle_type": "income_linked",
+      "series": 1783
+    }
+  ],
+  "baseline_monthly_salary_thb": {
+    "count": 2500.0,
+    "mean": 31682.32,
+    "std": 13059.12,
+    "min": 18000.0,
+    "10%": 18000.0,
+    "50%": 28800.0,
+    "90%": 48800.0,
+    "max": 100000.0
+  },
+  "history_days": {
+    "count": 2500.0,
+    "mean": 451.474,
+    "std": 167.00206825162414,
+    "min": 32.0,
+    "25%": 318.75,
+    "50%": 451.0,
+    "75%": 594.25,
+    "max": 731.0
+  },
+  "rows_by_date_split": {
+    "train_dates": 723556,
+    "calibration_dates": 568132,
+    "test_dates": 1396572
+  },
+  "payday_check": {
+    "salaried_customers": 2125,
+    "june_salary_share": 1.0,
+    "two_prior_credits_share": 1.0,
+    "next_credit_10_to_40_days_share": 1.0,
+    "estimated_gap_10_to_40_days_share": 1.0,
+    "median_next_gap_days": {
+      "salaried_semimonthly": 15.0,
+      "salaried": 30.0
+    }
+  },
+  "validation_ineligible_late_freelancers": 49,
+  "checks": [
+    "exact input schemas and field order",
+    "unique IDs and customer/account ownership",
+    "positive amounts and exact cent-level balance reconciliation",
+    "nonnegative internal and finite external savings balances",
+    "opening dates and per-account chronology",
+    "one-to-one transaction labels and valid series/links",
+    "no truth columns in model input files",
+    "leading-zero string code formats and payment-specific fields",
+    "paired same-bank own transfers",
+    "duplicate refunds and two-part bill links",
+    "series observation counts and label kinds",
+    "June and subsequent payday eligibility",
+    "history extends through 2026-09-30"
+  ],
+  "seed": 20261014,
+  "skipped_candidate_transactions": {
+    "discretionary_or_savings_when_short": 19451,
+    "dependent_on_skipped_purchase": 106
+  },
+  "calendar_sources": [
+    "https://www.bot.or.th/content/dam/bot/content-fragments/holiday-calendar/en/bot-notification-holiday/BOT-Notification-Holiday-Calendar-2024-EN.pdf",
+    "https://www.bot.or.th/en/news-and-media/news/news-20231102.html",
+    "https://www.bot.or.th/en/news-and-media/news/news-20240221.html",
+    "https://www.bot.or.th/content/dam/bot/content-fragments/holiday-calendar/en/bot-notification-holiday/BOT-Notification-Holiday-Calendar-2025-EN.pdf",
+    "https://www.bot.or.th/en/news-and-media/news/news-20241127.html",
+    "https://www.bot.or.th/content/dam/bot/fipcs/documents/FPG/2568/EngPDF/25680162.pdf"
+  ],
+  "assumptions": [
+    "Synthetic data: generation probabilities are scenario assumptions, not estimates of Thai customer prevalence.",
+    "Amounts are THB; posted_datetime is naive local Asia/Bangkok time.",
+    "The allowed global period starts 2024-01-01, but the 24-month opening rule places the earliest possible account opening at 2024-09-30. No earlier rows are fabricated.",
+    "Nationwide BOT bank holidays are used for business-day pay rules; regional/Islamic-bank additions are excluded. The fixed 28th rule does not shift weekends or holidays.",
+    "All salaried accounts open by 2026-04-01. Freelancers opening after 2026-06-01 have validation_eligible=False and cannot be evaluated as of that day.",
+    "Opening balances are carried in users_truth.opening_balances_json, not injected as fake income. Infer the opening balance from the first transaction when using inputs only.",
+    "Same-bank own-account transfers have paired debit/credit rows; external savings is a finite separately tracked pool, with opening and closing amounts in users_truth.",
+    "Credit-card purchases model bank-account debits. Credit-card statement bills represent a separate external card, to avoid counting its purchases twice.",
+    "Series status is status at 2026-09-30; start/end/successor information is truth only. Sparse annual series may have zero or one observed payment.",
+    "Cancelled plans and skipped cycles create absent events; future ground truth must be computed from realized transaction labels within each validation window.",
+    "Salary raises use a per-customer 3-5% April rate. The 2026 baseline has an THB 18k floor so earlier historical monthly salaries remain within THB 15k-100k after reversing raises and job changes.",
+    "No fraud labels or fraud performance claims are implied by this recurring-bill dataset."
+  ]
+}
